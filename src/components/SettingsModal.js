@@ -24,7 +24,7 @@ import {
   Zap,
   Settings as SettingsIcon,
 } from 'lucide-react';
-import { getEffectiveCredentials, saveEffectiveCredentials } from '../../keys/ltaKeys';
+import { getEffectiveCredentials, saveEffectiveCredentials } from '../config/ltaKeys';
 import { setLiveApiMode, getLiveApiMode } from '../services/ltaService';
 import { SCENARIOS } from '../data/scenarios';
 import { THEME } from '../theme/colors';

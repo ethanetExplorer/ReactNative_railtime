@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Modal, Switch } from 'react-native';
 import { X, Check, Info, Key } from 'lucide-react';
-import { getEffectiveCredentials, saveEffectiveCredentials } from '../../keys/ltaKeys';
+import { getEffectiveCredentials, saveEffectiveCredentials } from '../config/ltaKeys';
 import { setLiveApiMode, getLiveApiMode } from '../services/ltaService';
 
 export default function ApiKeyModal({

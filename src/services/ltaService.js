@@ -1,7 +1,7 @@
 // LTA DataMall API Service Layer
 // Connects to live LTA DataMall endpoints with automated canonical line translation and seamless scenario fallback.
 
-import { getEffectiveApiKey, getEffectiveCredentials } from '../../keys/ltaKeys.js';
+import { getEffectiveApiKey, getEffectiveCredentials } from '../config/ltaKeys.js';
 import { CANONICAL_LINES, toPCDLineCode, getCanonicalLine } from '../data/canonicalLines.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { getBusStopByCode, BUS_STOPS, MAJOR_BUS_SERVICES } from '../data/busData.js';
