@@ -1,0 +1,22 @@
+runtime: nodejs22
+instance_class: F1
+
+automatic_scaling:
+  max_instances: 2
+  min_instances: 0
+
+handlers:
+  # Static asset handler for Expo static bundle
+  - url: /_expo/static
+    static_dir: dist/_expo/static
+
+  # Static root files (favicon, metadata, etc.)
+  - url: /(.*\.(ico|png|json))$
+    static_files: dist/\1
+    upload: dist/(.*\.(ico|png|json))$
+
+  # Single Page App routing: all other routes serve index.html
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html
+

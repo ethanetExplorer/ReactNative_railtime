@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "RailTime SG - Smart Commuter Companion",
-    "slug": "railtime-sg",
+    "name": "Kiasu Transit SG - Smart Commuter Companion",
+    "slug": "kiasu-transit-sg",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,15 +20,15 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "output": "single",
-      "name": "RailTime SG",
-      "shortName": "RailTime",
+      "name": "Kiasu Transit SG",
+      "shortName": "Kiasu Transit",
       "display": "standalone",
       "startUrl": ".",
       "themeColor": "#083B38",
       "backgroundColor": "#083B38"
     },
     "experiments": {
-      "baseUrl": "/ReactNative_railtime/"
+      "baseUrl": ""
     }
   }
 }

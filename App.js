@@ -1,4 +1,4 @@
-// RailTime SG - Smart Commuter Companion Mobile Web App
+// Kiasu Transit SG - Smart Commuter Companion Mobile Web App
 // Built with React Native for Web & Expo SDK 57.
 // Proactive decision support for Singapore planned and unplanned events.
 
@@ -16,6 +16,7 @@ import SettingsModal from './src/components/SettingsModal';
 import { SCENARIOS } from './src/data/scenarios';
 import { POPULAR_DESTINATIONS } from './src/data/destinations';
 import { DEFAULT_COMMUTER_ORIGIN, requestUserLocation } from './src/services/locationService';
+import { COMMUTER_PERSONAS, getPersonaById } from './src/data/personas';
 import {
   setActiveScenario,
   getTrainServiceAlerts,
@@ -23,7 +24,7 @@ import {
 } from './src/services/ltaService';
 import { planCommuteRoute } from './src/services/routingEngine';
 
-const RECENT_STORAGE_KEY = 'RAILTIME_RECENT_SEARCHES_V1';
+const RECENT_STORAGE_KEY = 'KIASU_TRANSIT_RECENT_SEARCHES_V1';
 
 export default function App() {
   const { width } = useWindowDimensions();
@@ -35,6 +36,11 @@ export default function App() {
   // Scenario State
   const [activeScenarioId, setActiveScenarioId] = useState('NSL_UNPLANNED_FAULT');
   const [isLiveApi, setIsLiveApi] = useState(false);
+
+  // Commuter Persona State ('none' | 'persona_alex' | 'persona_kay')
+  const [activePersonaId, setActivePersonaId] = useState('none');
+  const [simulatedTime, setSimulatedTime] = useState(null);
+  const [routePreference, setRoutePreference] = useState('fastest');
 
   // Train Service Alerts & Crowding
   const [trainAlerts, setTrainAlerts] = useState(SCENARIOS.NSL_UNPLANNED_FAULT.trainServiceAlerts);
@@ -77,6 +83,14 @@ export default function App() {
       } catch (e) {}
     }
     setIsLiveApi(getLiveApiMode());
+
+    // Auto-detect user's actual location on mount (replacing Bukit Batok placeholder)
+    requestUserLocation().then(res => {
+      if (res.success && res.location) {
+        setCommuterOrigin(res.location);
+        setIsGpsActive(true);
+      }
+    }).catch(() => {});
   }, []);
 
   // Sync active scenario
@@ -96,6 +110,28 @@ export default function App() {
       setIsGpsActive(false);
     }
   }, []);
+
+  // Handle selecting a persona (Alex, Kay, None)
+  const handleSelectPersona = useCallback((personaId) => {
+    setActivePersonaId(personaId);
+    const persona = getPersonaById(personaId);
+
+    if (personaId === 'none' || !persona || !persona.origin) {
+      // Revert to user's actual GPS location and current live time
+      setSimulatedTime(null);
+      setRoutePreference('fastest');
+      handleRequestGps();
+    } else {
+      // Apply persona origin, destination, simulated time, and route preference
+      setCommuterOrigin(persona.origin);
+      setSelectedDestination(persona.destination);
+      setSimulatedTime(persona.simulatedTime);
+      setRoutePreference(persona.preference || 'fastest');
+      setIsGpsActive(false);
+      setCurrentScreen('route_diagram');
+      setIsSettingsModalOpen(false);
+    }
+  }, [handleRequestGps]);
 
   // Handle selecting a destination
   const handleSelectDestination = useCallback((destination) => {
@@ -125,16 +161,18 @@ export default function App() {
     }
   }, []);
 
-  // Compute the single best route
+  // Compute the single best route with simulated time and preference
   const currentScenario = SCENARIOS[activeScenarioId] || SCENARIOS.NSL_UNPLANNED_FAULT;
   const routePlan = useMemo(() => {
     if (!selectedDestination) return null;
     return planCommuteRoute(
       commuterOrigin,
       selectedDestination,
-      currentScenario
+      currentScenario,
+      routePreference,
+      simulatedTime
     );
-  }, [commuterOrigin, selectedDestination, currentScenario]);
+  }, [commuterOrigin, selectedDestination, currentScenario, routePreference, simulatedTime]);
 
   // Sync document theme-color for iOS Safari / Chrome top bar
   useEffect(() => {
@@ -183,13 +221,16 @@ export default function App() {
           )}
         </View>
 
-        {/* Settings Modal (Disruption Simulation Menu + LTA DataMall Keys) */}
+        {/* Settings Modal (Regular Places + Disruption Simulation + LTA DataMall Keys) */}
         <SettingsModal
           visible={isSettingsModalOpen}
           activeScenarioId={activeScenarioId}
           onSelectScenario={(newId) => setActiveScenarioId(newId)}
+          activePersonaId={activePersonaId}
+          onSelectPersona={handleSelectPersona}
           onClose={() => setIsSettingsModalOpen(false)}
           onConfigChanged={({ liveMode }) => setIsLiveApi(liveMode)}
+          onSelectDestination={handleSelectDestination}
         />
       </View>
     </SafeAreaView>

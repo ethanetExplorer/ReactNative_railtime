@@ -4,15 +4,15 @@
 
 import { getNearestStation } from '../data/mrtStations.js';
 
-// Default origin: Bukit Batok Central
+// Default initial origin: Current Location (auto-detected via GPS on launch)
 export const DEFAULT_COMMUTER_ORIGIN = {
-  id: 'origin_bukit_batok',
-  name: 'Bukit Batok Central',
-  shortName: 'Bukit Batok Central',
-  address: 'Bukit Batok Central, Singapore',
-  lat: 1.3490,
-  lng: 103.7496,
-  nearestStationId: 'bukit_batok',
+  id: 'origin_current_location',
+  name: 'Current Location',
+  shortName: 'Current Location',
+  address: 'Detecting current GPS location...',
+  lat: 1.2930,
+  lng: 103.8520,
+  nearestStationId: 'city_hall',
   isGps: false,
 };
 

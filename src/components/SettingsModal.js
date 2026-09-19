@@ -23,21 +23,31 @@ import {
   SlidersHorizontal,
   Zap,
   Settings as SettingsIcon,
+  MapPin,
+  User,
+  Clock,
 } from 'lucide-react';
 import { getEffectiveCredentials, saveEffectiveCredentials } from '../config/ltaKeys';
 import { setLiveApiMode, getLiveApiMode } from '../services/ltaService';
 import { SCENARIOS } from '../data/scenarios';
+import { COMMUTER_PERSONAS } from '../data/personas';
+import { loadRegularPlaces, saveRegularPlaces } from '../data/regularPlaces';
+import RegularPlacesView from './RegularPlacesView';
 import { THEME } from '../theme/colors';
 
 export default function SettingsModal({
   visible,
   activeScenarioId,
   onSelectScenario,
+  activePersonaId = 'none',
+  onSelectPersona,
   onClose,
   onConfigChanged,
+  onSelectDestination,
 }) {
-  // Navigation within settings: 'simulation' | 'keys'
-  const [activeTab, setActiveTab] = useState('simulation');
+  // Navigation within settings: 'places' | 'simulation' | 'keys'
+  const [activeTab, setActiveTab] = useState('places');
+  const [regularPlaces, setRegularPlaces] = useState([]);
 
   // Credentials & Live API Mode
   const [accountKey, setAccountKey] = useState('');
@@ -54,8 +64,14 @@ export default function SettingsModal({
       setApiKey(creds.apiKey || '');
       setLiveMode(getLiveApiMode());
       setSavedSuccess(false);
+      setRegularPlaces(loadRegularPlaces());
     }
   }, [visible]);
+
+  const handleUpdatePlaces = (newPlaces) => {
+    setRegularPlaces(newPlaces);
+    saveRegularPlaces(newPlaces);
+  };
 
   const handleSaveKeys = () => {
     saveEffectiveCredentials({
@@ -99,13 +115,24 @@ export default function SettingsModal({
           {/* Menu Navigation Segmented Control */}
           <View style={styles.segmentedControl}>
             <TouchableOpacity
+              style={[styles.segmentBtn, activeTab === 'places' && styles.segmentBtnActive]}
+              onPress={() => setActiveTab('places')}
+              activeOpacity={0.8}
+            >
+              <MapPin size={13} color={activeTab === 'places' ? '#0F172A' : '#64748B'} />
+              <Text style={[styles.segmentText, activeTab === 'places' && styles.segmentTextActive]}>
+                Regular Places
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.segmentBtn, activeTab === 'simulation' && styles.segmentBtnActive]}
               onPress={() => setActiveTab('simulation')}
               activeOpacity={0.8}
             >
               <SlidersHorizontal size={13} color={activeTab === 'simulation' ? '#0F172A' : '#64748B'} />
               <Text style={[styles.segmentText, activeTab === 'simulation' && styles.segmentTextActive]}>
-                Disruption Simulation
+                Disruption
               </Text>
             </TouchableOpacity>
 
@@ -116,19 +143,87 @@ export default function SettingsModal({
             >
               <Key size={13} color={activeTab === 'keys' ? '#0F172A' : '#64748B'} />
               <Text style={[styles.segmentText, activeTab === 'keys' && styles.segmentTextActive]}>
-                LTA DataMall Keys
+                DataMall Keys
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Tab 1: Disruption Simulation Menu */}
-          {activeTab === 'simulation' ? (
+          {/* Tab 1: Regular Places View */}
+          {activeTab === 'places' ? (
             <View style={styles.tabContent}>
+              <RegularPlacesView
+                places={regularPlaces}
+                onUpdatePlaces={handleUpdatePlaces}
+                onSelectDestination={onSelectDestination}
+                onClose={onClose}
+              />
+            </View>
+          ) : activeTab === 'simulation' ? (
+            /* Tab 2: Disruption Simulation Menu (Fully scrollable on mobile) */
+            <ScrollView
+              style={styles.tabContentScroll}
+              contentContainerStyle={styles.tabContentScrollContainer}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Persona Selector Section */}
+              <View style={styles.sectionHeaderRow}>
+                <User size={14} color={THEME.forestDark} strokeWidth={2.2} />
+                <Text style={styles.personaSectionTitle}>COMMUTER PERSONA</Text>
+              </View>
+              <Text style={styles.personaSectionSubtitle}>
+                Predefined personas with preset origin, destination, and schedule:
+              </Text>
+
+              <View style={styles.personaList}>
+                {COMMUTER_PERSONAS.map(persona => {
+                  const isPersonaActive = (activePersonaId || 'none') === persona.id;
+
+                  return (
+                    <TouchableOpacity
+                      key={persona.id}
+                      style={[styles.personaCard, isPersonaActive && styles.personaCardActive]}
+                      onPress={() => onSelectPersona && onSelectPersona(persona.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.personaCardHeader}>
+                        <View style={styles.personaNameWrap}>
+                          <Text style={[styles.personaName, isPersonaActive && styles.personaNameActive]}>
+                            {persona.name}
+                          </Text>
+                          <Text style={styles.personaTagline}>{persona.tagline}</Text>
+                        </View>
+                        {isPersonaActive && (
+                          <View style={styles.selectedPill}>
+                            <Check size={12} color={THEME.forestDark} strokeWidth={2.4} />
+                            <Text style={styles.selectedText}>Active</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.personaDesc}>{persona.description}</Text>
+                      {persona.simulatedTime && (
+                        <View style={styles.personaMetaRow}>
+                          <Clock size={11} color="#64748B" />
+                          <Text style={styles.personaMetaText}>
+                            Simulated Time: {persona.simulatedTime} · Arrive by {persona.arriveBy}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Scenarios Header */}
+              <View style={[styles.sectionHeaderRow, { marginTop: 16 }]}>
+                <SlidersHorizontal size={14} color={THEME.forestDark} strokeWidth={2.2} />
+                <Text style={styles.personaSectionTitle}>DISRUPTION SCENARIO</Text>
+              </View>
               <Text style={styles.sectionSubtitle}>
                 Select an event scenario to simulate live and test proactive rerouting:
               </Text>
 
-              <ScrollView style={styles.scenarioList} showsVerticalScrollIndicator={false}>
+              <View style={styles.scenarioListContainer}>
                 {scenarioList.map(scenario => {
                   const isActive = scenario.id === activeScenarioId;
                   const badge = getBadgeStyle(scenario.type);
@@ -165,10 +260,10 @@ export default function SettingsModal({
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
-            </View>
+              </View>
+            </ScrollView>
           ) : (
-            /* Tab 2: LTA DataMall Credentials */
+            /* Tab 3: LTA DataMall Credentials */
             <View style={styles.tabContent}>
               <Text style={styles.sectionSubtitle}>
                 Enter your LTA DataMall credentials. Keys are saved to git-ignored keys/ltaKeys.js and browser storage.
@@ -263,8 +358,8 @@ const styles = StyleSheet.create({
   },
   dialog: {
     width: '100%',
-    maxWidth: 480,
-    maxHeight: '88%',
+    maxWidth: 580,
+    maxHeight: '90%',
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 18,
@@ -346,6 +441,92 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginBottom: 10,
     lineHeight: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  personaSectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: THEME.forestDark,
+    letterSpacing: 0.8,
+  },
+  personaSectionSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  personaList: {
+    gap: 7,
+    marginBottom: 4,
+  },
+  personaCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  personaCardActive: {
+    borderColor: THEME.forestDark,
+    backgroundColor: '#F0FDF9',
+  },
+  personaCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  personaNameWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  personaName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  personaNameActive: {
+    color: THEME.forestDark,
+  },
+  personaTagline: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  personaDesc: {
+    fontSize: 11,
+    color: '#475569',
+    lineHeight: 15,
+    marginBottom: 4,
+  },
+  personaMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  personaMetaText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  tabContentScroll: {
+    flex: 1,
+    width: '100%',
+  },
+  tabContentScrollContainer: {
+    paddingBottom: 24,
+  },
+  scenarioListContainer: {
+    gap: 8,
+    marginBottom: 8,
   },
   scenarioList: {
     flex: 1,

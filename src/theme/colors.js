@@ -1,4 +1,4 @@
-// RailTime Theme Colors
+// Kiasu Transit Theme Colors
 // Exact dark pine / forest teal green palette matching reference UI
 
 export const THEME = {

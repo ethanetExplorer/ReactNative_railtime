@@ -210,10 +210,20 @@ function findFeederBusFromStation(stationObj, destination) {
 /**
  * Plan door-to-door commute route between ANY origin and ANY destination
  */
-export function planCommuteRoute(origin, destination, activeScenario, preference = 'fastest') {
+export function planCommuteRoute(origin, destination, activeScenario, preference = 'fastest', departureTimeParam = null) {
   if (!origin || !destination) return null;
 
-  const now = getSingaporeNow();
+  let now = getSingaporeNow();
+  if (departureTimeParam) {
+    if (departureTimeParam instanceof Date) {
+      now = departureTimeParam;
+    } else if (typeof departureTimeParam === 'string' && departureTimeParam.includes(':')) {
+      const parts = departureTimeParam.split(':');
+      const d = new Date();
+      d.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+      now = d;
+    }
+  }
 
   // Normalize origin & destination if passed as string station IDs or custom objects
   let origObj = origin;
@@ -241,13 +251,13 @@ export function planCommuteRoute(origin, destination, activeScenario, preference
   }
 
   const isDisrupted =
-    scenarioObj?.id === 'NSL_UNPLANNED_FAULT' || scenarioObj?.trainServiceAlerts?.Status === 2;
+    (scenarioObj?.id && DISRUPTION_CONFIGS[scenarioObj.id]) || scenarioObj?.trainServiceAlerts?.Status === 2;
   const isRaining = scenarioObj?.weather?.isRaining || preference === 'sheltered';
   const isAccessible = preference === 'accessible' || scenarioObj?.id === 'LIFT_MAINTENANCE_ACCESSIBLE';
   const isCrowdSurge = scenarioObj?.id === 'PCD_CROWD_SURGE_FORECAST';
 
   // Resolve nearest MRT stations
-  const originStationObj = getNearestStation(origObj.lat, origObj.lng).station || getStationById('bukit_batok');
+  const originStationObj = getNearestStation(origObj.lat, origObj.lng).station || getStationById('city_hall');
   const destStationObj =
     getStationById(destObj.nearestStationId) ||
     getNearestStation(destObj.lat, destObj.lng).station ||
@@ -391,74 +401,213 @@ function buildDirectWalkingRoute(origin, destination, distKm, now) {
   return walkRoute;
 }
 
-export const NSL_DISRUPTED_HOPS = new Set([
-  'jurong_east:bukit_batok',
-  'bukit_batok:jurong_east',
-  'bukit_batok:bukit_gombak',
-  'bukit_gombak:bukit_batok',
-  'bukit_gombak:choa_chu_kang',
-  'choa_chu_kang:bukit_gombak',
-]);
-
-export const NSL_SHUTTLE_STOPS = ['jurong_east', 'bukit_batok', 'bukit_gombak', 'choa_chu_kang'];
-
-export const NSL_SHUTTLE_COORDS = {
-  jurong_east: [1.3332, 103.7423],
-  bukit_batok: [1.3490, 103.7496],
-  bukit_gombak: [1.3586, 103.7519],
-  choa_chu_kang: [1.3854, 103.7444],
+export const DISRUPTION_CONFIGS = {
+  NSL_UNPLANNED_FAULT: {
+    lineId: 'NSL',
+    name: 'NSL Signalling Fault',
+    corridorName: 'Jurong East & Choa Chu Kang',
+    stops: ['jurong_east', 'bukit_batok', 'bukit_gombak', 'choa_chu_kang'],
+    disruptedHops: new Set([
+      'jurong_east:bukit_batok', 'bukit_batok:jurong_east',
+      'bukit_batok:bukit_gombak', 'bukit_gombak:bukit_batok',
+      'bukit_gombak:choa_chu_kang', 'choa_chu_kang:bukit_gombak',
+    ]),
+    coords: {
+      jurong_east: [1.3332, 103.7423],
+      bukit_batok: [1.3490, 103.7496],
+      bukit_gombak: [1.3586, 103.7519],
+      choa_chu_kang: [1.3854, 103.7444],
+    },
+    hopTimes: {
+      'jurong_east:bukit_batok': 6,
+      'bukit_batok:jurong_east': 6,
+      'bukit_batok:bukit_gombak': 4,
+      'bukit_gombak:bukit_batok': 4,
+      'bukit_gombak:choa_chu_kang': 7,
+      'choa_chu_kang:bukit_gombak': 7,
+    },
+  },
+  EWL_JURONG_QUEENSTOWN: {
+    lineId: 'EWL',
+    name: 'East-West Line Traction Power Fault',
+    corridorName: 'Jurong East & Queenstown',
+    stops: ['jurong_east', 'clementi', 'dover', 'buona_vista', 'commonwealth', 'queenstown'],
+    disruptedHops: new Set([
+      'jurong_east:clementi', 'clementi:jurong_east',
+      'clementi:dover', 'dover:clementi',
+      'dover:buona_vista', 'buona_vista:dover',
+      'buona_vista:commonwealth', 'commonwealth:buona_vista',
+      'commonwealth:queenstown', 'queenstown:commonwealth',
+    ]),
+    coords: {
+      jurong_east: [1.3332, 103.7423],
+      clementi: [1.3151, 103.7652],
+      dover: [1.3114, 103.7786],
+      buona_vista: [1.3073, 103.7900],
+      commonwealth: [1.3024, 103.7983],
+      queenstown: [1.2948, 103.8060],
+    },
+    hopTimes: {
+      'jurong_east:clementi': 7,
+      'clementi:jurong_east': 7,
+      'clementi:dover': 4,
+      'dover:clementi': 4,
+      'dover:buona_vista': 4,
+      'buona_vista:dover': 4,
+      'buona_vista:commonwealth': 4,
+      'commonwealth:buona_vista': 4,
+      'commonwealth:queenstown': 4,
+      'queenstown:commonwealth': 4,
+    },
+  },
+  NEL_ENTIRE_LINE: {
+    lineId: 'NEL',
+    name: 'North East Line Power Tripping',
+    corridorName: 'Entire North East Line',
+    stops: [
+      'harbourfront', 'outram_park', 'chinatown', 'clarke_quay', 'dhoby_ghaut',
+      'little_india', 'farrer_park', 'boon_keng', 'potong_pasir', 'woodleigh',
+      'serangoon', 'kovan', 'hougang', 'buangkok', 'sengkang', 'punggol'
+    ],
+    disruptedHops: new Set([
+      'harbourfront:outram_park', 'outram_park:harbourfront',
+      'outram_park:chinatown', 'chinatown:outram_park',
+      'chinatown:clarke_quay', 'clarke_quay:chinatown',
+      'clarke_quay:dhoby_ghaut', 'dhoby_ghaut:clarke_quay',
+      'dhoby_ghaut:little_india', 'little_india:dhoby_ghaut',
+      'little_india:farrer_park', 'farrer_park:little_india',
+      'farrer_park:boon_keng', 'boon_keng:farrer_park',
+      'boon_keng:potong_pasir', 'potong_pasir:boon_keng',
+      'potong_pasir:woodleigh', 'woodleigh:potong_pasir',
+      'woodleigh:serangoon', 'serangoon:woodleigh',
+      'serangoon:kovan', 'kovan:serangoon',
+      'kovan:hougang', 'hougang:kovan',
+      'hougang:buangkok', 'buangkok:hougang',
+      'buangkok:sengkang', 'sengkang:buangkok',
+      'sengkang:punggol', 'punggol:sengkang',
+    ]),
+    coords: {
+      harbourfront: [1.2653, 103.8224],
+      outram_park: [1.2803, 103.8395],
+      chinatown: [1.2846, 103.8433],
+      clarke_quay: [1.2884, 103.8465],
+      dhoby_ghaut: [1.2987, 103.8459],
+      little_india: [1.3068, 103.8492],
+      farrer_park: [1.3123, 103.8540],
+      boon_keng: [1.3194, 103.8617],
+      potong_pasir: [1.3313, 103.8691],
+      woodleigh: [1.3392, 103.8708],
+      serangoon: [1.3498, 103.8736],
+      kovan: [1.3602, 103.8851],
+      hougang: [1.3713, 103.8924],
+      buangkok: [1.3829, 103.8931],
+      sengkang: [1.3917, 103.8955],
+      punggol: [1.4052, 103.9022],
+    },
+    hopTimes: {},
+  },
+  CCL_DHOBY_PROMENADE: {
+    lineId: 'CCL',
+    name: 'Circle Line Track Circuit Fault',
+    corridorName: 'Dhoby Ghaut & Promenade',
+    stops: ['dhoby_ghaut', 'bras_basah', 'esplanade', 'promenade'],
+    disruptedHops: new Set([
+      'dhoby_ghaut:bras_basah', 'bras_basah:dhoby_ghaut',
+      'bras_basah:esplanade', 'esplanade:bras_basah',
+      'esplanade:promenade', 'promenade:esplanade',
+    ]),
+    coords: {
+      dhoby_ghaut: [1.2987, 103.8459],
+      bras_basah: [1.2969, 103.8507],
+      esplanade: [1.2935, 103.8554],
+      promenade: [1.2932, 103.8604],
+    },
+    hopTimes: {
+      'dhoby_ghaut:bras_basah': 3,
+      'bras_basah:dhoby_ghaut': 3,
+      'bras_basah:esplanade': 3,
+      'esplanade:bras_basah': 3,
+      'esplanade:promenade': 4,
+      'promenade:esplanade': 4,
+    },
+  },
 };
 
-export function doesLegTraverseNSLFault(leg) {
-  if (!leg || leg.type !== 'mrt' || leg.lineId !== 'NSL') return false;
-  const stopsData = getLineStops('NSL', leg.fromStationId, leg.toStationId);
+export const NSL_DISRUPTED_HOPS = DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT.disruptedHops;
+export const NSL_SHUTTLE_STOPS = DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT.stops;
+export const NSL_SHUTTLE_COORDS = DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT.coords;
+
+export function getDisruptionConfig(activeScenarioId) {
+  if (activeScenarioId && DISRUPTION_CONFIGS[activeScenarioId]) {
+    return DISRUPTION_CONFIGS[activeScenarioId];
+  }
+  return null;
+}
+
+export function doesLegTraverseDisruption(leg, disruptionCfg) {
+  if (!leg || leg.type !== 'mrt' || !disruptionCfg) return false;
+  if (leg.lineId !== disruptionCfg.lineId) return false;
+
+  const stopsData = getLineStops(disruptionCfg.lineId, leg.fromStationId, leg.toStationId);
   const stnIds = stopsData?.intermediateStations?.map(s => s.id) || [];
   for (let i = 0; i < stnIds.length - 1; i++) {
-    if (NSL_DISRUPTED_HOPS.has(`${stnIds[i]}:${stnIds[i + 1]}`)) return true;
+    const hop = `${stnIds[i]}:${stnIds[i + 1]}`;
+    if (disruptionCfg.disruptedHops.has(hop)) return true;
   }
   return false;
 }
 
-export function doesOptionTraverseNSLFault(opt) {
-  if (!opt || !opt.legs) return false;
-  return opt.legs.some(l => doesLegTraverseNSLFault(l));
+export function doesOptionTraverseDisruption(opt, disruptionCfg) {
+  if (!opt || !opt.legs || !disruptionCfg) return false;
+  return opt.legs.some(l => doesLegTraverseDisruption(l, disruptionCfg));
 }
 
-export function getShuttleDurationMin(fromId, toId) {
-  const hopTimes = {
-    'jurong_east:bukit_batok': 6,
-    'bukit_batok:jurong_east': 6,
-    'bukit_batok:bukit_gombak': 4,
-    'bukit_gombak:bukit_batok': 4,
-    'bukit_gombak:choa_chu_kang': 7,
-    'choa_chu_kang:bukit_gombak': 7,
-  };
-  const idx1 = NSL_SHUTTLE_STOPS.indexOf(fromId);
-  const idx2 = NSL_SHUTTLE_STOPS.indexOf(toId);
+export function doesLegTraverseNSLFault(leg) {
+  return doesLegTraverseDisruption(leg, DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT);
+}
+
+export function doesOptionTraverseNSLFault(opt) {
+  return doesOptionTraverseDisruption(opt, DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT);
+}
+
+export function getGenericShuttleDurationMin(fromId, toId, disruptionCfg) {
+  const stops = disruptionCfg?.stops || [];
+  const hopTimes = disruptionCfg?.hopTimes || {};
+  const idx1 = stops.indexOf(fromId);
+  const idx2 = stops.indexOf(toId);
   if (idx1 === -1 || idx2 === -1) return 15;
   const start = Math.min(idx1, idx2);
   const end = Math.max(idx1, idx2);
   let rideMin = 0;
   for (let i = start; i < end; i++) {
-    const key = `${NSL_SHUTTLE_STOPS[i]}:${NSL_SHUTTLE_STOPS[i + 1]}`;
-    rideMin += hopTimes[key] || 5;
+    const key = `${stops[i]}:${stops[i + 1]}`;
+    rideMin += hopTimes[key] || 4.5;
   }
-  return Math.max(5, rideMin + 3);
+  return Math.max(5, Math.round(rideMin + 3));
+}
+
+export function getGenericShuttleStopsSlice(fromId, toId, disruptionCfg) {
+  const stops = disruptionCfg?.stops || [];
+  const idx1 = stops.indexOf(fromId);
+  const idx2 = stops.indexOf(toId);
+  if (idx1 === -1 || idx2 === -1) return [fromId, toId];
+  if (idx1 <= idx2) {
+    return stops.slice(idx1, idx2 + 1);
+  } else {
+    return stops.slice(idx2, idx1 + 1).reverse();
+  }
+}
+
+export function getShuttleDurationMin(fromId, toId) {
+  return getGenericShuttleDurationMin(fromId, toId, DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT);
 }
 
 export function getShuttleStopsSlice(fromId, toId) {
-  const idx1 = NSL_SHUTTLE_STOPS.indexOf(fromId);
-  const idx2 = NSL_SHUTTLE_STOPS.indexOf(toId);
-  if (idx1 === -1 || idx2 === -1) return [fromId, toId];
-  if (idx1 <= idx2) {
-    return NSL_SHUTTLE_STOPS.slice(idx1, idx2 + 1);
-  } else {
-    return NSL_SHUTTLE_STOPS.slice(idx2, idx1 + 1).reverse();
-  }
+  return getGenericShuttleStopsSlice(fromId, toId, DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT);
 }
 
 /**
- * Builds a Free MRT Bridging Shuttle option by replacing the disrupted NSL segment
+ * Builds a Free MRT Bridging Shuttle option by replacing the disrupted MRT segment
  * with an actual free shuttle bus leg between the affected stations.
  */
 export function buildBridgingShuttleOption({
@@ -470,20 +619,22 @@ export function buildBridgingShuttleOption({
   opt,
   now,
   isCrowdSurge,
+  disruptionCfg = DISRUPTION_CONFIGS.NSL_UNPLANNED_FAULT,
 }) {
-  if (!opt || !opt.legs) return null;
+  if (!opt || !opt.legs || !disruptionCfg) return null;
 
   const newSegments = [];
   let shuttleAdded = false;
+  const lineId = disruptionCfg.lineId;
 
   opt.legs.forEach(segment => {
-    if (segment.type === 'mrt' && segment.lineId === 'NSL' && doesLegTraverseNSLFault(segment)) {
-      const stopsData = getLineStops('NSL', segment.fromStationId, segment.toStationId);
+    if (segment.type === 'mrt' && segment.lineId === lineId && doesLegTraverseDisruption(segment, disruptionCfg)) {
+      const stopsData = getLineStops(lineId, segment.fromStationId, segment.toStationId);
       const stnIds = stopsData?.intermediateStations?.map(s => s.id) || [segment.fromStationId, segment.toStationId];
 
       const faultIndices = [];
       stnIds.forEach((sId, idx) => {
-        if (NSL_SHUTTLE_STOPS.includes(sId)) faultIndices.push(idx);
+        if (disruptionCfg.stops.includes(sId)) faultIndices.push(idx);
       });
 
       if (faultIndices.length >= 2) {
@@ -492,12 +643,12 @@ export function buildBridgingShuttleOption({
         const entryStnId = stnIds[firstFaultIdx];
         const exitStnId = stnIds[lastFaultIdx];
 
-        // 1. Pre-shuttle train leg if trip originated further north
+        // 1. Pre-shuttle train leg if trip originated further before the fault
         if (firstFaultIdx > 0) {
           const preStnId = stnIds[0];
           newSegments.push({
             type: 'mrt',
-            lineId: 'NSL',
+            lineId,
             fromStationId: preStnId,
             toStationId: entryStnId,
             durationMin: Math.max(2, firstFaultIdx * 2.5),
@@ -505,18 +656,18 @@ export function buildBridgingShuttleOption({
           newSegments.push({
             type: 'transfer',
             stationId: entryStnId,
-            fromLine: 'NSL',
+            fromLine: lineId,
             toLine: 'Shuttle',
-            instruction: 'Transfer to Free MRT Bridging Shuttle',
+            instruction: `Transfer to Free ${lineId} Bridging Shuttle`,
             isCross: false,
             durationMin: 2,
           });
         }
 
         // 2. The Free MRT Bridging Shuttle Bus segment
-        const shuttleStops = getShuttleStopsSlice(entryStnId, exitStnId);
-        const shuttleDuration = getShuttleDurationMin(entryStnId, exitStnId);
-        const shuttleCoords = shuttleStops.map(s => NSL_SHUTTLE_COORDS[s] || [1.34, 103.75]);
+        const shuttleStops = getGenericShuttleStopsSlice(entryStnId, exitStnId, disruptionCfg);
+        const shuttleDuration = getGenericShuttleDurationMin(entryStnId, exitStnId, disruptionCfg);
+        const shuttleCoords = shuttleStops.map(s => disruptionCfg.coords[s] || [1.34, 103.75]);
         const entryStn = getStationById(entryStnId);
         const exitStn = getStationById(exitStnId);
 
@@ -524,7 +675,7 @@ export function buildBridgingShuttleOption({
           type: 'bus',
           serviceNumber: 'Shuttle',
           badge: 'Free Shuttle',
-          title: 'Free MRT Shuttle Bus',
+          title: `Free ${lineId} Shuttle Bus`,
           subtitle: `${entryStn?.name || entryStnId} ➔ ${exitStn?.name || exitStnId}`,
           fromName: entryStn?.name || entryStnId,
           toName: exitStn?.name || exitStnId,
@@ -549,14 +700,14 @@ export function buildBridgingShuttleOption({
             type: 'transfer',
             stationId: exitStnId,
             fromLine: 'Shuttle',
-            toLine: 'NSL',
-            instruction: 'Transfer to North-South Line',
+            toLine: lineId,
+            instruction: `Transfer to ${lineId}`,
             isCross: false,
             durationMin: 2,
           });
           newSegments.push({
             type: 'mrt',
-            lineId: 'NSL',
+            lineId,
             fromStationId: exitStnId,
             toStationId: postStnId,
             durationMin: Math.max(2, (stnIds.length - 1 - lastFaultIdx) * 2.5),
@@ -566,11 +717,11 @@ export function buildBridgingShuttleOption({
         newSegments.push(segment);
       }
     } else {
-      if (shuttleAdded && segment.type === 'transfer' && segment.fromLine === 'NSL') {
+      if (shuttleAdded && segment.type === 'transfer' && segment.fromLine === lineId) {
         newSegments.push({
           ...segment,
           fromLine: 'Shuttle',
-          instruction: segment.instruction ? segment.instruction.replace('NSL', 'Shuttle') : `Transfer to ${segment.toLine}`,
+          instruction: segment.instruction ? segment.instruction.replace(lineId, 'Shuttle') : `Transfer to ${segment.toLine}`,
         });
       } else {
         newSegments.push(segment);
@@ -582,7 +733,7 @@ export function buildBridgingShuttleOption({
 
   const route = assembleTransitDoorToDoorRoute({
     id,
-    title: 'Free MRT Shuttle + Train',
+    title: `Free ${lineId} Shuttle + Train`,
     badge: 'Free Shuttle',
     origin,
     destination,
@@ -596,10 +747,10 @@ export function buildBridgingShuttleOption({
   if (route) {
     route.isRerouted = true;
     route.scenarioType = 'disrupted';
-    route.proactiveAction = 'Free MRT Bridging Shuttle Active';
+    route.proactiveAction = `Free ${lineId} Bridging Shuttle Active`;
     route.proactiveReason =
-      'Trains suspended between Jurong East & Choa Chu Kang. Free bridging buses operating frequently.';
-    route.mitigationNotice = 'Free MRT Shuttle active between Jurong East & Choa Chu Kang.';
+      `Trains suspended along ${disruptionCfg.corridorName}. Free bridging buses operating frequently.`;
+    route.mitigationNotice = `Free MRT Shuttle active along ${disruptionCfg.corridorName}.`;
   }
 
   return route;
@@ -911,10 +1062,10 @@ export function findAStarTransitPath(startStationId, endStationId, options = {})
       let realWeight = Math.max(2.2, Math.round((dwellMin + runMin) * 10) / 10);
       let generalizedWeight = realWeight;
 
-      if (activeScenarioId === 'NSL_UNPLANNED_FAULT' && lineId === 'NSL') {
-        const disruptedSec = ['jurong_east', 'bukit_batok', 'bukit_gombak', 'choa_chu_kang'];
-        if (disruptedSec.includes(u) && disruptedSec.includes(v)) {
-          generalizedWeight += 45;
+      const activeDisruptionCfg = getDisruptionConfig(activeScenarioId);
+      if (activeDisruptionCfg && lineId === activeDisruptionCfg.lineId) {
+        if (activeDisruptionCfg.disruptedHops.has(`${u}:${v}`) || activeDisruptionCfg.disruptedHops.has(`${v}:${u}`)) {
+          generalizedWeight += 50;
           realWeight += 45;
         }
       }
@@ -1957,23 +2108,22 @@ function buildDynamicTransitRoute(
 
   const candidateRoutes = [];
 
-  const isDisrupted =
-    scenario?.id === 'NSL_UNPLANNED_FAULT' || scenario?.trainServiceAlerts?.Status === 2;
+  const disruptionCfg = getDisruptionConfig(scenario?.id);
+  const isDisrupted = !!disruptionCfg || scenario?.trainServiceAlerts?.Status === 2;
 
   const normalPaths = isDisrupted ? findMultiRouteTransitPaths(originStationObj.id, destStationObj.id) : [];
-  const normalTraversesFault = isDisrupted && normalPaths.some(opt => doesOptionTraverseNSLFault(opt));
-  const isDirectFaultSector = isDisrupted && (
-    (originStationObj.id === 'bukit_batok' || originStationObj.id === 'bukit_gombak') ||
-    (destStationObj.id === 'bukit_batok' || destStationObj.id === 'bukit_gombak')
+  const normalTraversesFault = isDisrupted && disruptionCfg && normalPaths.some(opt => doesOptionTraverseDisruption(opt, disruptionCfg));
+  const isDirectFaultSector = isDisrupted && disruptionCfg && (
+    disruptionCfg.stops.includes(originStationObj.id) || disruptionCfg.stops.includes(destStationObj.id)
   );
   const isJourneyAffectedByDisruption = isDisrupted && (normalTraversesFault || isDirectFaultSector);
 
   // 1. Build door-to-door objects for each MRT transit option
   transitOptions.forEach((opt, idx) => {
-    const traversesFault = isDisrupted && doesOptionTraverseNSLFault(opt);
+    const traversesFault = isDisrupted && disruptionCfg && doesOptionTraverseDisruption(opt, disruptionCfg);
 
-    // If this option traverses the disrupted NSL fault, construct the Free Bridging Shuttle alternative
-    if (traversesFault) {
+    // If this option traverses the disrupted corridor, construct the Free Bridging Shuttle alternative
+    if (traversesFault && disruptionCfg) {
       const shuttleRoute = buildBridgingShuttleOption({
         id: `route_shuttle_${idx}`,
         origin,
@@ -1983,6 +2133,7 @@ function buildDynamicTransitRoute(
         opt,
         now,
         isCrowdSurge,
+        disruptionCfg,
       });
       if (shuttleRoute) {
         candidateRoutes.push(shuttleRoute);
@@ -1992,7 +2143,7 @@ function buildDynamicTransitRoute(
     const isPrimary = idx === 0;
     const r = assembleTransitDoorToDoorRoute({
       id: opt.id || `route_mrt_${idx}`,
-      title: traversesFault ? 'Direct NSL (Disrupted)' : (opt.title || (isPrimary ? 'Recommended' : 'Alternative')),
+      title: traversesFault ? `Direct ${disruptionCfg?.lineId || 'MRT'} (Disrupted)` : (opt.title || (isPrimary ? 'Recommended' : 'Alternative')),
       badge: traversesFault ? 'Delayed (+40m)' : (opt.badge || (isPrimary ? 'Fastest' : 'Alternative')),
       origin,
       destination,
@@ -2007,14 +2158,14 @@ function buildDynamicTransitRoute(
       if (traversesFault) {
         r.isDisrupted = true;
         r.isRerouted = false;
-        r.proactiveAction = '⚠️ Rail Service Disrupted (+40 min delay)';
-        r.proactiveReason = 'Signalling fault: trains delayed between Jurong East & Choa Chu Kang.';
-        r.mitigationNotice = 'Severe delays on NSL. Free Bridging Shuttle recommended.';
+        r.proactiveAction = `⚠️ ${disruptionCfg?.lineId || 'Rail'} Disrupted (+40 min delay)`;
+        r.proactiveReason = `${disruptionCfg?.name || 'Disruption'}: trains delayed along ${disruptionCfg?.corridorName || 'affected corridor'}.`;
+        r.mitigationNotice = `Severe delays on ${disruptionCfg?.lineId || 'MRT'}. Free Bridging Shuttle recommended.`;
       } else if (isJourneyAffectedByDisruption) {
         r.isRerouted = true;
         r.proactiveAction = 'Bypasses Disrupted Rail Corridor';
-        r.proactiveReason = `Rerouted via ${r.routeSummary} to avoid the NSL signalling fault between Jurong East & Choa Chu Kang.`;
-        r.mitigationNotice = 'NSL disruption bypassed via rail network.';
+        r.proactiveReason = `Rerouted via ${r.routeSummary} to avoid the ${disruptionCfg?.lineId || 'MRT'} disruption along ${disruptionCfg?.corridorName || 'affected line'}.`;
+        r.mitigationNotice = `${disruptionCfg?.lineId || 'MRT'} disruption bypassed via alternative network.`;
       }
       candidateRoutes.push(r);
     }

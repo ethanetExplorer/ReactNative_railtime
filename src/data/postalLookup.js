@@ -191,6 +191,20 @@ export function searchLocations(query) {
         badge: 'PG LRT Interchange',
       });
     }
+  } else if (q.includes('meridian') || q === 'pe2') {
+    results.unshift({
+      id: 'stn_meridian_lrt',
+      name: 'Meridian LRT (PE2)',
+      shortName: 'Meridian LRT',
+      postalCode: '820108',
+      address: 'Meridian Station, Punggol Central, Singapore',
+      category: 'LRT Station',
+      nearestStationId: 'punggol',
+      dailyTapOuts: 18000,
+      lat: 1.4052,
+      lng: 103.8972,
+      badge: 'PE2 LRT',
+    });
   }
 
   // Check MRT stations by name or station code (e.g. "NS1", "Jurong East")

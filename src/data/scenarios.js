@@ -85,6 +85,154 @@ export const SCENARIOS = {
     facilitiesMaintenance: [],
   },
 
+  EWL_JURONG_QUEENSTOWN: {
+    id: 'EWL_JURONG_QUEENSTOWN',
+    name: 'EWL Disruption (Jurong East ⇄ Queenstown)',
+    badge: 'EWL Major Fault',
+    type: 'unplanned',
+    description: 'Traction power fault suspends EWL trains between EW24 Jurong East and EW19 Queenstown. Free bridging buses active at Clementi, Dover, Buona Vista, and Commonwealth.',
+    trainServiceAlerts: {
+      Status: 2,
+      AffectedSegments: [
+        {
+          Line: 'EWL',
+          Direction: 'Both',
+          Stations: 'EW24,EW23,EW22,EW21,EW20,EW19', // Jurong East, Clementi, Dover, Buona Vista, Commonwealth, Queenstown
+          FreePublicBus: 'EW24,EW23,EW22,EW21,EW20,EW19',
+          FreeMRTShuttle: 'EW24,EW23,EW22,EW21,EW20,EW19',
+          MRTShuttleDirection: 'Both',
+        },
+      ],
+      Message: [
+        {
+          Content: '08:30 hrs: No train service on East-West Line between EW24 Jurong East and EW19 Queenstown due to a traction power fault. Free bridging bus services available at all affected stations.',
+          CreatedDate: '2026-09-19 08:30:15',
+        },
+      ],
+    },
+    weather: {
+      condition: 'Cloudy',
+      isRaining: false,
+      rainfallMm: 0,
+      floodAlerts: [],
+    },
+    pcdCrowdLevels: {
+      jurong_east: 'h',
+      clementi: 'h',
+      buona_vista: 'h',
+      queenstown: 'h',
+      redhill: 'm',
+      raffles_place: 'm',
+      city_hall: 'm',
+    },
+    proactiveDecision: {
+      recommendedAction: 'Transfer to Circle Line at Buona Vista or take bridging bus to Queenstown',
+      secondaryAction: 'Connect via Downtown Line (Beauty World / King Albert Park) to downtown',
+      tradeoff: 'Bypasses severe platform congestion along western East-West Line corridor',
+      reasoning: 'East-West Line train service halted between EW24 Jurong East and EW19 Queenstown. Free bridging buses activated across Clementi, Dover, Buona Vista, Commonwealth, and Queenstown.',
+    },
+    facilitiesMaintenance: [],
+  },
+
+  NEL_ENTIRE_LINE: {
+    id: 'NEL_ENTIRE_LINE',
+    name: 'NEL Island-wide Disruption',
+    badge: 'Entire Line Down',
+    type: 'unplanned',
+    description: 'System-wide power tripping halts all train services along the entire North East Line from HarbourFront to Punggol. Free bridging buses and trunk services activated.',
+    trainServiceAlerts: {
+      Status: 2,
+      AffectedSegments: [
+        {
+          Line: 'NEL',
+          Direction: 'Both',
+          Stations: 'NE1,NE3,NE4,NE5,NE6,NE7,NE8,NE9,NE10,NE11,NE12,NE13,NE14,NE15,NE16,NE17',
+          FreePublicBus: 'ALL_NEL',
+          FreeMRTShuttle: 'ALL_NEL',
+          MRTShuttleDirection: 'Both',
+        },
+      ],
+      Message: [
+        {
+          Content: '08:40 hrs: No train service on the ENTIRE North East Line due to power tripping. Free regular public buses and free MRT bridging buses operating at all NEL stations.',
+          CreatedDate: '2026-09-19 08:40:00',
+        },
+      ],
+    },
+    weather: {
+      condition: 'Fair',
+      isRaining: false,
+      rainfallMm: 0,
+      floodAlerts: [],
+    },
+    pcdCrowdLevels: {
+      harbourfront: 'h',
+      outram_park: 'h',
+      chinatown: 'h',
+      dhoby_ghaut: 'h',
+      little_india: 'h',
+      serangoon: 'h',
+      hougang: 'h',
+      sengkang: 'h',
+      punggol: 'h',
+    },
+    proactiveDecision: {
+      recommendedAction: 'Reroute via Circle Line at Serangoon or Downtown Line at Little India / Chinatown',
+      secondaryAction: 'Take Express Trunk Bus 147 / 80 towards CBD corridor',
+      tradeoff: 'Avoids complete NEL shutdown; connections via CCL, DTL, and NSL operating normally',
+      reasoning: 'Total North East Line shutdown. Directing passengers to North-South Line, Circle Line, Downtown Line, and bridging buses.',
+    },
+    facilitiesMaintenance: [],
+  },
+
+  CCL_DHOBY_PROMENADE: {
+    id: 'CCL_DHOBY_PROMENADE',
+    name: 'Circle Line Disruption (Dhoby Ghaut ⇄ Promenade)',
+    badge: 'CCL Track Fault',
+    type: 'unplanned',
+    description: 'Track circuit failure suspends Circle Line trains between CC1 Dhoby Ghaut and CC4 Promenade (including Bras Basah & Esplanade). Free bridging buses activated.',
+    trainServiceAlerts: {
+      Status: 2,
+      AffectedSegments: [
+        {
+          Line: 'CCL',
+          Direction: 'Both',
+          Stations: 'CC1,CC2,CC3,CC4', // Dhoby Ghaut, Bras Basah, Esplanade, Promenade
+          FreePublicBus: 'CC1,CC2,CC3,CC4',
+          FreeMRTShuttle: 'CC1,CC2,CC3,CC4',
+          MRTShuttleDirection: 'Both',
+        },
+      ],
+      Message: [
+        {
+          Content: '09:00 hrs: Circle Line train service unavailable between CC1 Dhoby Ghaut and CC4 Promenade due to a track circuit fault. Free bridging buses active between Dhoby Ghaut and Promenade.',
+          CreatedDate: '2026-09-19 09:00:10',
+        },
+      ],
+    },
+    weather: {
+      condition: 'Fair',
+      isRaining: false,
+      rainfallMm: 0,
+      floodAlerts: [],
+    },
+    pcdCrowdLevels: {
+      dhoby_ghaut: 'h',
+      bras_basah: 'm',
+      esplanade: 'm',
+      promenade: 'h',
+      bayfront: 'm',
+      marina_bay: 'm',
+    },
+    proactiveDecision: {
+      recommendedAction: 'Transfer to Downtown Line at Promenade / Bugis or walk to City Hall / Bugis',
+      secondaryAction: 'Take Free Bridging Bus connecting Dhoby Ghaut, Bras Basah, Esplanade, and Promenade',
+      tradeoff: 'Bypasses civic district Circle Line bottleneck directly via Downtown Line or East-West Line',
+      reasoning: 'CCL trains unable to run between CC1 Dhoby Ghaut and CC4 Promenade. Alternative rail lines (DTL, EWL, NSL) are unaffected in the central area.',
+    },
+    facilitiesMaintenance: [],
+  },
+
   DOWNPOUR_RAIN_ALERT: {
     id: 'DOWNPOUR_RAIN_ALERT',
     name: 'Heavy Downpour & Flood Alert',
