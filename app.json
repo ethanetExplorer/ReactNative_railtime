@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ReactNative_railtime",
-    "slug": "ReactNative_railtime",
+    "name": "RailTime SG - Smart Commuter Companion",
+    "slug": "railtime-sg",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

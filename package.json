@@ -2,17 +2,23 @@
   "name": "reactnative_railtime",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "dependencies": {
     "expo": "~57.0.24",
     "expo-status-bar": "~57.0.1",
+    "lucide-react": "^1.47.0",
+    "lucide-react-native": "^1.47.0",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-svg": "^15.15.5",
+    "react-native-web": "^0.21.2"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start",
+    "android": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --android",
+    "ios": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --ios",
+    "web": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --web"
   },
   "private": true
 }

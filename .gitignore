@@ -39,3 +39,14 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# API keys and private configs (LTA DataMall)
+keys/
+config/keys.js
+*.local.js
+
+# build & runner cache
+.expo-home/
+.env
+scratch/
+
