@@ -18,7 +18,9 @@
     "start": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start",
     "android": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --android",
     "ios": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --ios",
-    "web": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --web"
+    "web": "EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home expo start --web",
+    "export:web": "NODE_ENV=production EXPO_NO_TELEMETRY=1 __UNSAFE_EXPO_HOME_DIRECTORY=./.expo-home npx expo export --platform web --clear",
+    "deploy:pages": "npm run export:web"
   },
   "private": true
 }

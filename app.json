@@ -18,7 +18,17 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "name": "RailTime SG",
+      "shortName": "RailTime",
+      "display": "standalone",
+      "startUrl": ".",
+      "themeColor": "#083B38",
+      "backgroundColor": "#083B38"
+    },
+    "experiments": {
+      "baseUrl": "/ReactNative_railtime/"
     }
   }
 }
